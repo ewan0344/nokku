@@ -16,7 +16,7 @@ export default function LocationDetailCard({ location, onClose, onExplore, onGet
   const isChecking = isTheyyam && verificationState === 'checking';
 
   return (
-    <div className="bg-white/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-2xl border border-black/[0.08] w-full flex flex-col max-h-full min-h-0 relative overflow-hidden text-left select-text">
+    <div className="bg-white/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-2xl border border-black/[0.08] w-full flex flex-col max-h-[90vh] min-h-0 relative overflow-hidden text-left select-text">
       {/* Header Accent Bar */}
       <div className={`absolute top-0 left-0 right-0 h-1.5 ${
         isAtRisk ? 'bg-gradient-to-r from-red-500 to-rose-600' :
@@ -69,34 +69,50 @@ export default function LocationDetailCard({ location, onClose, onExplore, onGet
         <span>{location.locationStr}</span>
       </div>
 
-      {/* Description Body - Scrollable if content exceeds available viewport height */}
-      <div className="flex-1 min-h-0 overflow-y-auto pr-1.5 my-1 text-xs sm:text-[13px] text-gray-600 leading-relaxed font-normal space-y-2.5 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 hover:[&::-webkit-scrollbar-thumb]:bg-gray-400">
-        {location.fullDesc ? (
-          location.fullDesc.split('\n\n').map((para, i) => (
-            <p key={i}>{para}</p>
-          ))
-        ) : (
-          <p>{location.shortDesc}</p>
-        )}
-      </div>
+     {/* Description Body */}
+<div className="flex-1 min-h-0 overflow-y-auto pr-1.5 my-3 text-xs sm:text-[13px] text-gray-600 leading-relaxed font-normal space-y-3">
+  {location.fullDesc ? (
+    location.fullDesc.split('\n\n').map((para, i) => (
+      <p key={i}>{para}</p>
+    ))
+  ) : (
+    <p>{location.shortDesc}</p>
+  )}
+</div>
 
-      {/* Tags */}
-      {location.tags && (
-        <div className="flex flex-wrap gap-1.5 my-2 flex-shrink-0">
-          {location.tags.map((tag) => (
-            <span
-              key={tag}
-              className={`text-[10px] sm:text-[10.5px] font-semibold px-2 py-0.5 rounded-md ${
-                tag.includes('AT-RISK')
-                  ? 'bg-red-100/80 text-red-800 font-bold'
-                  : 'bg-gray-100 text-gray-600'
-              }`}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
+{/* Tags */}
+{location.tags && (
+  <div className="flex flex-wrap gap-1.5 my-2 flex-shrink-0">
+    {location.tags.map((tag) => (
+      <span
+        key={tag}
+        className={`text-[10px] sm:text-[10.5px] font-semibold px-2 py-0.5 rounded-md ${
+          tag.includes('AT-RISK')
+            ? 'bg-red-100/80 text-red-800 font-bold'
+            : 'bg-gray-100 text-gray-600'
+        }`}
+      >
+        {tag}
+      </span>
+    ))}
+  </div>
+)}
+{/* Image */}
+{location.image && (
+  <img
+    src={location.image}
+    alt={location.name}
+    style={{
+      width: '100%',
+      borderRadius: '10px',
+      marginTop: '10px'
+    }}
+  />
+)}
+
+
+
+
 
       {/* Action Buttons - Always anchored and visible */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-2.5 border-t border-gray-100 mt-auto flex-shrink-0">

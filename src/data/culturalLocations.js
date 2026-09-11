@@ -16,7 +16,8 @@ export const CULTURAL_LOCATIONS = [
     coordinates: { x: 38, y: 56 },
     shortDesc: 'Historical coastal fort with significant historical and cultural importance.',
     fullDesc: 'Facing the Arabian Sea, this imposing triangular stone fort was constructed in 1505 by Francisco de Almeida. It holds monumental historical value across Portuguese, Dutch, Arakkal, and British historical eras with massive laterite ramparts, moats, and coastal lighthouse views.',
-    tags: ['Historical', 'Coastal Architecture', 'Laterite Monument']
+    tags: ['Historical', 'Coastal Architecture', 'Laterite Monument'],
+    image: '/st.angelo.jpg'
   },
   {
     id: 'thalassery-fort',
@@ -44,7 +45,8 @@ export const CULTURAL_LOCATIONS = [
     coordinates: { x: 48, y: 62 },
     shortDesc: 'The historic royal seat of Kerala\'s only Muslim royal dynasty.',
     fullDesc: 'The ancestral palace complex (Arakkal Kettu) of the Arakkal Ali Rajas, who ruled coastal Kannur and the Lakshadweep islands. The durbar hall, wooden architecture, maritime artifacts, and royal heirlooms represent a unique syncretic chapter in Kerala\'s maritime heritage.',
-    tags: ['Royal Dynasty', 'Islamic Architecture', 'Maritime Heritage']
+    tags: ['Royal Dynasty', 'Islamic Architecture', 'Maritime Heritage'],
+    image: '/araakal.jpg'
   },
   {
     id: 'ezhimala',
@@ -74,7 +76,8 @@ export const CULTURAL_LOCATIONS = [
     coordinates: { x: 74, y: 68 },
     shortDesc: 'A famous Malabar-style biryani associated with the Thalassery region.',
     fullDesc: 'Renowned throughout South Asia, Thalassery Biryani is prepared with short-grain fragrant Khyma (Jeerakasala) rice rather than Basmati, slow-cooked through the traditional Dum method using indigenous Malabar spices, ghee, caramelized onions, and tender marinated meat.',
-    tags: ['Malabar Cuisine', 'Dum Cooking', 'Jeerakasala Rice']
+    tags: ['Malabar Cuisine', 'Dum Cooking', 'Jeerakasala Rice'],
+    image: '/thalaserry.jpg'
   },
   {
     id: 'pathiri',
@@ -88,7 +91,8 @@ export const CULTURAL_LOCATIONS = [
     coordinates: { x: 44, y: 46 },
     shortDesc: 'A traditional Kerala flatbread commonly associated with Malabar cuisine.',
     fullDesc: 'An iconic delicacy of the North Malabar region, Pathiri is an exquisitely thin, soft round flatbread crafted from roasted rice flour. Expertly rolled and roasted without oil, it is traditionally served during celebrations and paired with rich coconut milk stews or spicy gravies.',
-    tags: ['Rice Flour Flatbread', 'Malabar Tradition', 'Culinary Craft']
+    tags: ['Rice Flour Flatbread', 'Malabar Tradition', 'Culinary Craft'],
+    image: '/pathiri.jpg'
   },
 
   // 🔴 AT-RISK / DECLINING CULTURE (Red 3D Arrow)
@@ -108,7 +112,8 @@ export const CULTURAL_LOCATIONS = [
 Different Theyyam forms are connected with local deities, legends, ancestral traditions and stories that have been passed down through generations. Performances are usually held in sacred groves, temples and traditional family shrines.
 
 Theyyam is more than a performance for entertainment; it is a living cultural tradition that connects communities with their history, beliefs and oral traditions. Its continuation depends heavily on the transmission of knowledge and skills from one generation to the next.`,
-    tags: ['AT-RISK CULTURE', 'Ritual Art', 'Sacred Groves', 'Living Oral Tradition']
+    tags: ['AT-RISK CULTURE', 'Ritual Art', 'Sacred Groves', 'Living Oral Tradition'],
+     image: '/theyyam.jpg'
   },
   {
     id: 'shaaliya-porattu',
@@ -122,6 +127,7 @@ Theyyam is more than a performance for entertainment; it is a living cultural tr
     coordinates: { x: 62, y: 48 },
     shortDesc: 'Traditional cultural performance/tradition. Its popularity is declining.',
     fullDesc: 'A centuries-old theatrical folk ritual performance preserved predominantly by the traditional Saliya (weaver) community of North Malabar. Characterized by dramatic masks, satirical oral verses, and community storytelling, this vanishing folk art now counts only a handful of active elder troupes.',
-    tags: ['AT-RISK CULTURE', 'Folk Theatre', 'Weaver Heritage', 'Vanishing Tradition']
+    tags: ['AT-RISK CULTURE', 'Folk Theatre', 'Weaver Heritage', 'Vanishing Tradition'],
+   
   }
 ];
