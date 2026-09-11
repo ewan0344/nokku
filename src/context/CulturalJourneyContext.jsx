@@ -8,6 +8,7 @@ export function CulturalJourneyProvider({ children }) {
   // =========================================================
   // HERITAGE POINTS
   // =========================================================
+
   const [heritagePoints, setHeritagePoints] = useState(() => {
     const saved = localStorage.getItem('nokku_heritage_points');
     return saved !== null ? parseInt(saved, 10) : 0;
@@ -17,6 +18,7 @@ export function CulturalJourneyProvider({ children }) {
   // =========================================================
   // VISITED PLACES
   // =========================================================
+
   const [visitedPlaces, setVisitedPlaces] = useState(() => {
     const saved = localStorage.getItem('nokku_visited_places');
 
@@ -31,6 +33,7 @@ export function CulturalJourneyProvider({ children }) {
   // =========================================================
   // UNLOCKED RELICS
   // =========================================================
+
   const [unlockedRelics, setUnlockedRelics] = useState(() => {
     const saved = localStorage.getItem('nokku_unlocked_relics');
 
@@ -43,8 +46,24 @@ export function CulturalJourneyProvider({ children }) {
 
 
   // =========================================================
+  // TREASURE HUNT PROGRESS
+  // =========================================================
+
+  const [treasureHuntProgress, setTreasureHuntProgress] = useState(() => {
+    const saved = localStorage.getItem('nokku_treasure_hunt_progress');
+
+    try {
+      return saved ? JSON.parse(saved) : {};
+    } catch (error) {
+      return {};
+    }
+  });
+
+
+  // =========================================================
   // THEYYAM VERIFICATION
   // =========================================================
+
   const [verificationState, setVerificationState] = useState(() => {
 
     const saved = localStorage.getItem('nokku_visited_places');
@@ -71,12 +90,14 @@ export function CulturalJourneyProvider({ children }) {
   // =========================================================
   // TOAST
   // =========================================================
+
   const [toastNotification, setToastNotification] = useState(null);
 
 
   // =========================================================
   // SAVE HERITAGE POINTS
   // =========================================================
+
   useEffect(() => {
     localStorage.setItem(
       'nokku_heritage_points',
@@ -88,6 +109,7 @@ export function CulturalJourneyProvider({ children }) {
   // =========================================================
   // SAVE VISITED PLACES
   // =========================================================
+
   useEffect(() => {
     localStorage.setItem(
       'nokku_visited_places',
@@ -99,6 +121,7 @@ export function CulturalJourneyProvider({ children }) {
   // =========================================================
   // SAVE RELICS
   // =========================================================
+
   useEffect(() => {
     localStorage.setItem(
       'nokku_unlocked_relics',
@@ -108,8 +131,21 @@ export function CulturalJourneyProvider({ children }) {
 
 
   // =========================================================
+  // SAVE TREASURE HUNT PROGRESS
+  // =========================================================
+
+  useEffect(() => {
+    localStorage.setItem(
+      'nokku_treasure_hunt_progress',
+      JSON.stringify(treasureHuntProgress)
+    );
+  }, [treasureHuntProgress]);
+
+
+  // =========================================================
   // CHECK IF THEYYAM IS VERIFIED
   // =========================================================
+
   const isTheyyamVerified = visitedPlaces.some(
     place => place.id === 'theyyam-centres'
   );
@@ -118,6 +154,7 @@ export function CulturalJourneyProvider({ children }) {
   // =========================================================
   // CHECK IF ANY PLACE IS VISITED
   // =========================================================
+
   const isPlaceVisited = (placeId) => {
     return visitedPlaces.some(
       place => place.id === placeId
@@ -127,14 +164,6 @@ export function CulturalJourneyProvider({ children }) {
 
   // =========================================================
   // GENERAL MARK PLACE AS VISITED
-  // =========================================================
-  //
-  // This works for:
-  // - Heritage
-  // - Food
-  // - At-Risk Culture
-  // - Any future location
-  //
   // =========================================================
 
   const markPlaceVisited = (place) => {
@@ -148,6 +177,7 @@ export function CulturalJourneyProvider({ children }) {
 
 
     // Don't add the same place twice
+
     if (isPlaceVisited(place.id)) {
 
       setToastNotification({
@@ -164,6 +194,7 @@ export function CulturalJourneyProvider({ children }) {
 
 
     // Create the visited-place object
+
     const visitedPlace = {
 
       id: place.id,
@@ -216,11 +247,13 @@ export function CulturalJourneyProvider({ children }) {
         ),
 
       // Used to know this was added by the general visit system
+
       isUserVisited: true
     };
 
 
     // Add place to visited list
+
     setVisitedPlaces(prev => [
       ...prev,
       visitedPlace
@@ -232,6 +265,7 @@ export function CulturalJourneyProvider({ children }) {
     // =======================================================
 
     // Give 10 points for a normal visit
+
     setHeritagePoints(prev => prev + 10);
 
 
@@ -268,6 +302,256 @@ export function CulturalJourneyProvider({ children }) {
 
 
   // =========================================================
+  // TREASURE HUNT
+  // =========================================================
+
+  /*
+    treasureHuntProgress structure:
+
+    {
+      "kerala-heritage-hunt": [
+        "clue-1",
+        "clue-2"
+      ]
+    }
+  */
+
+
+  // ---------------------------------------------------------
+  // CHECK IF A TREASURE CLUE IS COMPLETED
+  // ---------------------------------------------------------
+
+  const isTreasureClueCompleted = (
+    huntId,
+    clueId
+  ) => {
+
+    return (
+      treasureHuntProgress[huntId] || []
+    ).includes(clueId);
+
+  };
+
+
+  // ---------------------------------------------------------
+  // GET NUMBER OF COMPLETED CLUES
+  // ---------------------------------------------------------
+
+  const getTreasureHuntProgress = (huntId) => {
+
+    return (
+      treasureHuntProgress[huntId] || []
+    ).length;
+
+  };
+
+
+  // ---------------------------------------------------------
+  // COMPLETE TREASURE CLUE
+  // ---------------------------------------------------------
+
+  const completeTreasureClue = (
+    hunt,
+    clue
+  ) => {
+
+    if (!hunt || !clue) {
+      return;
+    }
+
+
+    // Make sure this clue isn't already completed
+
+    if (
+      isTreasureClueCompleted(
+        hunt.id,
+        clue.id
+      )
+    ) {
+
+      setToastNotification({
+        title: 'Clue already completed',
+        subtitle: clue.title,
+      });
+
+      setTimeout(() => {
+        setToastNotification(null);
+      }, 3000);
+
+      return;
+    }
+
+
+    // -------------------------------------------------------
+    // ADD CLUE TO PROGRESS
+    // -------------------------------------------------------
+
+    setTreasureHuntProgress(prev => {
+
+      const currentProgress =
+        prev[hunt.id] || [];
+
+      return {
+        ...prev,
+
+        [hunt.id]: [
+          ...currentProgress,
+          clue.id
+        ]
+      };
+
+    });
+
+
+    // -------------------------------------------------------
+    // CLUE REWARD
+    // -------------------------------------------------------
+
+    const clueReward =
+      clue.reward || 50;
+
+    setHeritagePoints(
+      prev => prev + clueReward
+    );
+
+
+    // -------------------------------------------------------
+    // CHECK IF THIS COMPLETES THE WHOLE HUNT
+    // -------------------------------------------------------
+
+    const currentCompleted =
+      treasureHuntProgress[hunt.id] || [];
+
+    const newCompletedCount =
+      currentCompleted.length + 1;
+
+    const totalClues =
+      hunt.clues?.length || 0;
+
+
+    // -------------------------------------------------------
+    // WHOLE HUNT COMPLETED
+    // -------------------------------------------------------
+
+    if (
+      totalClues > 0 &&
+      newCompletedCount >= totalClues
+    ) {
+
+      const huntReward =
+        hunt.reward || 250;
+
+      setHeritagePoints(
+        prev => prev + huntReward
+      );
+
+
+      // Unlock treasure relic
+
+      const treasureRelic = {
+
+        id: `treasure-${hunt.id}`,
+
+        title: 'TREASURE HUNTER',
+
+        subtitle: hunt.title,
+
+        description:
+          `Completed the ${hunt.title} treasure hunt.`,
+
+        unlockedAt:
+          new Date().toLocaleDateString(
+            'en-US',
+            {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric'
+            }
+          ),
+
+        pointsReward: huntReward,
+
+        badgeType: 'treasure'
+
+      };
+
+
+      setUnlockedRelics(prev => {
+
+        if (
+          prev.some(
+            relic =>
+              relic.id ===
+              `treasure-${hunt.id}`
+          )
+        ) {
+          return prev;
+        }
+
+        return [
+          ...prev,
+          treasureRelic
+        ];
+
+      });
+
+
+      // Completion notification
+
+      setToastNotification({
+
+        title: '🏆 Treasure Hunt Complete!',
+
+        subtitle:
+          `${hunt.title} completed! +${clueReward + huntReward} Heritage Points`,
+
+      });
+
+    } else {
+
+      // Normal clue completion notification
+
+      setToastNotification({
+
+        title: `+${clueReward} Heritage Points`,
+
+        subtitle:
+          `${clue.title} completed!`,
+
+      });
+
+    }
+
+
+    setTimeout(() => {
+      setToastNotification(null);
+    }, 4500);
+
+  };
+
+
+  // ---------------------------------------------------------
+  // CHECK IF WHOLE TREASURE HUNT IS COMPLETED
+  // ---------------------------------------------------------
+
+  const isTreasureHuntCompleted = (hunt) => {
+
+    if (!hunt || !hunt.clues) {
+      return false;
+    }
+
+    const completed =
+      treasureHuntProgress[hunt.id] || [];
+
+    return (
+      completed.length >=
+      hunt.clues.length
+    );
+
+  };
+
+
+  // =========================================================
   // THEYYAM SPECIAL VERIFICATION
   // =========================================================
 
@@ -285,6 +569,7 @@ export function CulturalJourneyProvider({ children }) {
 
 
     // Simulate verification
+
     setTimeout(() => {
 
       setVerificationState('confirmed');
@@ -332,7 +617,9 @@ export function CulturalJourneyProvider({ children }) {
 
         if (
           prev.some(
-            place => place.id === 'theyyam-centres'
+            place =>
+              place.id ===
+              'theyyam-centres'
           )
         ) {
           return prev;
@@ -383,7 +670,8 @@ export function CulturalJourneyProvider({ children }) {
         if (
           prev.some(
             relicItem =>
-              relicItem.id === 'heritage-guardian'
+              relicItem.id ===
+              'heritage-guardian'
           )
         ) {
           return prev;
@@ -401,7 +689,9 @@ export function CulturalJourneyProvider({ children }) {
       // +100 POINTS
       // =====================================================
 
-      setHeritagePoints(prev => prev + 100);
+      setHeritagePoints(
+        prev => prev + 100
+      );
 
 
       // =====================================================
@@ -441,6 +731,8 @@ export function CulturalJourneyProvider({ children }) {
 
     setUnlockedRelics([]);
 
+    setTreasureHuntProgress({});
+
     setVerificationState('idle');
 
 
@@ -456,13 +748,17 @@ export function CulturalJourneyProvider({ children }) {
       'nokku_unlocked_relics'
     );
 
+    localStorage.removeItem(
+      'nokku_treasure_hunt_progress'
+    );
+
 
     setToastNotification({
 
       title: 'Demo reset successfully',
 
       subtitle:
-        'Prototype visit, points and achievement have been reset.',
+        'Prototype visit, points, achievements and treasure hunts have been reset.',
 
     });
 
@@ -487,9 +783,12 @@ export function CulturalJourneyProvider({ children }) {
       value={{
 
         // Points
+
         heritagePoints,
 
+
         // Visited places
+
         visitedPlaces,
 
         isPlaceVisited,
@@ -498,20 +797,41 @@ export function CulturalJourneyProvider({ children }) {
 
         removeVisitedPlace,
 
+
         // Relics
+
         unlockedRelics,
 
+
+        // Treasure Hunt
+
+        treasureHuntProgress,
+
+        isTreasureClueCompleted,
+
+        getTreasureHuntProgress,
+
+        completeTreasureClue,
+
+        isTreasureHuntCompleted,
+
+
         // Theyyam
+
         isTheyyamVerified,
 
         verificationState,
 
         verifyTheyyamVisit,
 
+
         // Reset
+
         resetDemoProgress,
 
+
         // Toast
+
         toastNotification,
 
         dismissToast: () =>
@@ -672,6 +992,7 @@ export function useCulturalJourney() {
     );
 
   }
+
 
   return context;
 
