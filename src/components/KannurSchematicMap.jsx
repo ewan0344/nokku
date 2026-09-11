@@ -4,6 +4,14 @@ import { GreenArrowMarker3D, RedArrowMarker3D, FoodMarker3D } from './MapMarkers
 import LocationDetailCard from './LocationDetailCard';
 import { Compass, Sparkles, Navigation, X, Clock, MapPin, Info } from 'lucide-react';
 
+// Category metadata for user-submitted cultural info (feature: "Add Info")
+const CATEGORY_META = {
+  place: { label: 'Place', emoji: '📍', markerType: 'green-arrow' },
+  food: { label: 'Food', emoji: '🍛', markerType: 'food' },
+  art: { label: 'Art Form', emoji: '🎭', markerType: 'red-arrow' },
+  other: { label: 'Other', emoji: '✨', markerType: 'green-arrow' },
+};
+
 export default function KannurSchematicMap({ onBackToKerala, isNearMe }) {
   // Automatically select Theyyam Centres so the description card is visible on initial open
   const [selectedLocation, setSelectedLocation] = useState(() => {
@@ -11,6 +19,21 @@ export default function KannurSchematicMap({ onBackToKerala, isNearMe }) {
   });
   const [filterCategory, setFilterCategory] = useState('all'); // 'all' | 'heritage' | 'food' | 'tradition'
   const [activeRoute, setActiveRoute] = useState(null);
+
+  // --- "Add Info" feature state ---
+  const [isAddingInfo, setIsAddingInfo] = useState(false);
+  const [locationMode, setLocationMode] = useState(null); // 'map' | 'manual' | null
+  const [pendingLocation, setPendingLocation] = useState(null); // { x, y, manualName }
+  const [manualLocationText, setManualLocationText] = useState('');
+  const [showInfoForm, setShowInfoForm] = useState(false);
+  const [formCategory, setFormCategory] = useState('place');
+  const [formName, setFormName] = useState('');
+  const [formDescription, setFormDescription] = useState('');
+  const [formPhotoPreview, setFormPhotoPreview] = useState(null);
+  const [showVerification, setShowVerification] = useState(false);
+  const [verificationStage, setVerificationStage] = useState('checking'); // 'checking' | 'match' | 'nomatch'
+  const [verificationMatch, setVerificationMatch] = useState(null);
+  const [userAddedLocations, setUserAddedLocations] = useState([]);
 
   const filteredLocations = CULTURAL_LOCATIONS.filter((loc) => {
     if (filterCategory === 'all') return true;
@@ -33,6 +56,111 @@ export default function KannurSchematicMap({ onBackToKerala, isNearMe }) {
       duration: '~8 min',
       routeDesc: 'via Kakkad - Chirakkal Sacred Grove Rd',
     });
+  };
+
+  // --- "Add Info" feature handlers ---
+
+  const resetAddInfoFlow = () => {
+    setIsAddingInfo(false);
+    setLocationMode(null);
+    setPendingLocation(null);
+    setManualLocationText('');
+    setShowInfoForm(false);
+    setFormCategory('place');
+    setFormName('');
+    setFormDescription('');
+    if (formPhotoPreview) URL.revokeObjectURL(formPhotoPreview);
+    setFormPhotoPreview(null);
+    setShowVerification(false);
+    setVerificationStage('checking');
+    setVerificationMatch(null);
+  };
+
+  const handleToggleAddInfo = () => {
+    if (isAddingInfo || showInfoForm || showVerification) {
+      resetAddInfoFlow();
+    } else {
+      setIsAddingInfo(true);
+    }
+  };
+
+  const handleMapClick = (e) => {
+    if (!isAddingInfo || showInfoForm || showVerification) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setLocationMode('map');
+    setPendingLocation({ x, y, manualName: null });
+  };
+
+  const handleManualLocationSubmit = () => {
+    if (!manualLocationText.trim()) return;
+    // Prototype position - no real geocoding, place near the demo town center with a slight offset
+    const x = 45 + (Math.random() * 10 - 5);
+    const y = 50 + (Math.random() * 10 - 5);
+    setPendingLocation({ x, y, manualName: manualLocationText.trim() });
+  };
+
+  const handleConfirmLocation = () => {
+    setShowInfoForm(true);
+  };
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (formPhotoPreview) URL.revokeObjectURL(formPhotoPreview);
+    setFormPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const handleRemovePhoto = () => {
+    if (formPhotoPreview) URL.revokeObjectURL(formPhotoPreview);
+    setFormPhotoPreview(null);
+  };
+
+  const handleFormCancel = () => {
+    resetAddInfoFlow();
+  };
+
+  const handleFormDone = () => {
+    if (!formName.trim() || !pendingLocation) return;
+    setShowInfoForm(false);
+    setShowVerification(true);
+    setVerificationStage('checking');
+
+    // Simulated Google Maps verification - PROTOTYPE ONLY, no real API call
+    setTimeout(() => {
+      const foundMatch = CULTURAL_LOCATIONS.length > 0 && Math.random() > 0.5;
+      if (foundMatch) {
+        const randomExisting = CULTURAL_LOCATIONS[Math.floor(Math.random() * CULTURAL_LOCATIONS.length)];
+        setVerificationMatch({
+          name: randomExisting.name,
+          distance: `${Math.floor(60 + Math.random() * 150)} m`,
+        });
+        setVerificationStage('match');
+      } else {
+        setVerificationMatch(null);
+        setVerificationStage('nomatch');
+      }
+    }, 1600);
+  };
+
+  const handleFinalizeAddition = () => {
+    if (!pendingLocation) return;
+    const meta = CATEGORY_META[formCategory] || CATEGORY_META.other;
+    const newLocation = {
+      id: `user-${Date.now()}`,
+      name: formName.trim(),
+      category: formCategory,
+      markerType: meta.markerType,
+      coordinates: { x: pendingLocation.x, y: pendingLocation.y },
+      description: formDescription.trim(),
+      image: formPhotoPreview,
+      subtext: pendingLocation.manualName || 'Added via prototype',
+      isUserAdded: true,
+    };
+    setUserAddedLocations((prev) => [...prev, newLocation]);
+    setSelectedLocation(newLocation);
+    resetAddInfoFlow();
   };
 
   return (
@@ -65,57 +193,148 @@ export default function KannurSchematicMap({ onBackToKerala, isNearMe }) {
           )}
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex items-center space-x-1.5 bg-white/95 backdrop-blur-md p-1 rounded-2xl border border-black/[0.06] shadow-sm">
+        {/* Add Info Button + Filter Pills */}
+        <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
-            onClick={() => setFilterCategory('all')}
-            className={`px-3 py-1 rounded-xl text-xs font-bold transition-colors ${
-              filterCategory === 'all'
-                ? 'bg-[#D8612F] text-white shadow-sm'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            onClick={handleToggleAddInfo}
+            className={`px-3 py-1.5 rounded-2xl text-xs font-bold shadow-sm border transition-colors ${
+              isAddingInfo || showInfoForm || showVerification
+                ? 'bg-[#D8612F] text-white border-[#D8612F]'
+                : 'bg-white/95 text-[#D8612F] border-black/[0.06] hover:bg-orange-50'
             }`}
           >
-            All (8)
+            ＋ Add Info
           </button>
-          <button
-            type="button"
-            onClick={() => setFilterCategory('heritage')}
-            className={`px-3 py-1 rounded-xl text-xs font-bold transition-colors flex items-center space-x-1 ${
-              filterCategory === 'heritage'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-emerald-800 hover:bg-emerald-50'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span>Heritage (4)</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilterCategory('food')}
-            className={`px-3 py-1 rounded-xl text-xs font-bold transition-colors flex items-center space-x-1 ${
-              filterCategory === 'food'
-                ? 'bg-amber-600 text-white shadow-sm'
-                : 'text-amber-800 hover:bg-amber-50'
-            }`}
-          >
-            <span>🍽️</span>
-            <span>Food (2)</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilterCategory('tradition')}
-            className={`px-3 py-1 rounded-xl text-xs font-bold transition-colors flex items-center space-x-1 ${
-              filterCategory === 'tradition'
-                ? 'bg-red-600 text-white shadow-sm'
-                : 'text-red-800 hover:bg-red-50'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-            <span>At-Risk (2)</span>
-          </button>
+
+          <div className="flex items-center space-x-1.5 bg-white/95 backdrop-blur-md p-1 rounded-2xl border border-black/[0.06] shadow-sm">
+            <button
+              type="button"
+              onClick={() => setFilterCategory('all')}
+              className={`px-3 py-1 rounded-xl text-xs font-bold transition-colors ${
+                filterCategory === 'all'
+                  ? 'bg-[#D8612F] text-white shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              All (8)
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterCategory('heritage')}
+              className={`px-3 py-1 rounded-xl text-xs font-bold transition-colors flex items-center space-x-1 ${
+                filterCategory === 'heritage'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-emerald-800 hover:bg-emerald-50'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span>Heritage (4)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterCategory('food')}
+              className={`px-3 py-1 rounded-xl text-xs font-bold transition-colors flex items-center space-x-1 ${
+                filterCategory === 'food'
+                  ? 'bg-amber-600 text-white shadow-sm'
+                  : 'text-amber-800 hover:bg-amber-50'
+              }`}
+            >
+              <span>🍽️</span>
+              <span>Food (2)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterCategory('tradition')}
+              className={`px-3 py-1 rounded-xl text-xs font-bold transition-colors flex items-center space-x-1 ${
+                filterCategory === 'tradition'
+                  ? 'bg-red-600 text-white shadow-sm'
+                  : 'text-red-800 hover:bg-red-50'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+              <span>At-Risk (2)</span>
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Add Info Flow Banner (location selection step) */}
+      {isAddingInfo && !showInfoForm && !showVerification && (
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-40 bg-white/95 backdrop-blur-xl px-4 py-3 rounded-2xl shadow-xl border border-orange-200 animate-in slide-in-from-top-2 duration-200 flex flex-col items-center gap-2 max-w-sm sm:max-w-md text-center">
+          <div className="flex items-center gap-1.5 text-xs font-black text-[#D8612F] uppercase tracking-wide">
+            <MapPin className="w-3.5 h-3.5" />
+            Add Cultural Information
+          </div>
+
+          {!pendingLocation ? (
+            <>
+              <p className="text-xs text-gray-600">
+                Click anywhere on the Kannur map to select a location.
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setLocationMode('manual')}
+                  className="px-3 py-1.5 rounded-xl bg-gray-100 text-gray-700 text-xs font-bold hover:bg-gray-200 transition-colors"
+                >
+                  Enter location manually
+                </button>
+                <button
+                  type="button"
+                  onClick={resetAddInfoFlow}
+                  className="px-3 py-1.5 rounded-xl text-gray-400 text-xs font-bold hover:text-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+
+              {locationMode === 'manual' && (
+                <div className="flex items-center gap-2 w-full mt-1">
+                  <input
+                    type="text"
+                    value={manualLocationText}
+                    onChange={(e) => setManualLocationText(e.target.value)}
+                    placeholder="e.g. Kannur, Kerala"
+                    className="flex-1 px-3 py-1.5 rounded-xl border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#D8612F]/40"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleManualLocationSubmit}
+                    className="px-3 py-1.5 rounded-xl bg-[#D8612F] text-white text-xs font-bold hover:bg-[#c2551f] transition-colors whitespace-nowrap"
+                  >
+                    Set
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="text-xs text-gray-600">
+                {pendingLocation.manualName
+                  ? `Location set: ${pendingLocation.manualName}`
+                  : 'Location selected on the map. Click again to move it.'}
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleConfirmLocation}
+                  className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors"
+                >
+                  ✓ Select Location
+                </button>
+                <button
+                  type="button"
+                  onClick={resetAddInfoFlow}
+                  className="px-3 py-1.5 rounded-xl text-gray-400 text-xs font-bold hover:text-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Floating Simulated Route Banner */}
       {activeRoute && (
@@ -144,7 +363,12 @@ export default function KannurSchematicMap({ onBackToKerala, isNearMe }) {
       )}
 
       {/* Main Schematic Discovery Canvas */}
-      <div className="relative w-full flex-1 max-w-5xl rounded-3xl overflow-hidden shadow-inner border border-black/[0.05] bg-[#F7F9FB] flex items-center justify-center min-h-0">
+      <div
+        className={`relative w-full flex-1 max-w-5xl rounded-3xl overflow-hidden shadow-inner border border-black/[0.05] bg-[#F7F9FB] flex items-center justify-center min-h-0 ${
+          isAddingInfo && !showInfoForm && !showVerification ? 'cursor-crosshair' : ''
+        }`}
+        onClick={handleMapClick}
+      >
         
         {/* Custom Stylized Kannur Landscape SVG */}
         <svg
@@ -340,7 +564,7 @@ export default function KannurSchematicMap({ onBackToKerala, isNearMe }) {
         {/* Simulated Demo Starting Location Marker */}
         {activeRoute && (
           <div
-            className="absolute z-35 -translate-x-1/2 -translate-y-1/2 animate-in zoom-in-75 duration-200 pointer-events-none"
+            className="absolute z-30 -translate-x-1/2 -translate-y-1/2 animate-in zoom-in-75 duration-200 pointer-events-none"
             style={{ left: `${demoStartingPoint.x}%`, top: `${demoStartingPoint.y}%` }}
           >
             <div className="relative flex flex-col items-center">
@@ -358,8 +582,66 @@ export default function KannurSchematicMap({ onBackToKerala, isNearMe }) {
           </div>
         )}
 
+        {/* New Location Selection Marker (Add Info feature) */}
+        {pendingLocation && (isAddingInfo || showInfoForm || showVerification) && (
+          <div
+            className="absolute z-40 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+            style={{ left: `${pendingLocation.x}%`, top: `${pendingLocation.y}%` }}
+          >
+            <div className="relative flex flex-col items-center">
+              <div className="absolute w-12 h-12 rounded-full bg-[#D8612F]/25 animate-ping" />
+              <div className="relative w-9 h-9 rounded-full bg-[#D8612F] border-4 border-white shadow-xl flex items-center justify-center">
+                <MapPin className="w-5 h-5 text-white" />
+              </div>
+              <div className="mt-1 px-2.5 py-1 rounded-lg bg-[#D8612F] text-white text-[10px] font-bold shadow-lg whitespace-nowrap">
+                New Location
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 3D Markers Layer */}
         {filteredLocations.map((loc) => {
+          const isSelected = selectedLocation?.id === loc.id;
+
+          return (
+            <div
+              key={loc.id}
+              className="absolute transition-all duration-300"
+              style={{
+                left: `${loc.coordinates.x}%`,
+                top: `${loc.coordinates.y}%`,
+              }}
+            >
+              {loc.markerType === 'green-arrow' && (
+                <GreenArrowMarker3D
+                  active={isSelected}
+                  label={loc.name}
+                  onClick={() => setSelectedLocation(loc)}
+                />
+              )}
+
+              {loc.markerType === 'red-arrow' && (
+                <RedArrowMarker3D
+                  active={isSelected}
+                  label={loc.name}
+                  onClick={() => setSelectedLocation(loc)}
+                />
+              )}
+
+              {loc.markerType === 'food' && (
+                <FoodMarker3D
+                  active={isSelected}
+                  label={loc.name}
+                  onClick={() => setSelectedLocation(loc)}
+                />
+              )}
+            </div>
+          );
+        })}
+
+        {/* User-Added Markers Layer (Add Info feature - always visible regardless of filter) */}
+        {userAddedLocations.map((loc) => {
           const isSelected = selectedLocation?.id === loc.id;
 
           return (
@@ -411,6 +693,181 @@ export default function KannurSchematicMap({ onBackToKerala, isNearMe }) {
                 alert(`Cultural Discovery Feature for "${loc.name}" will unlock in the upcoming stage!`);
               }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* ADD CULTURAL INFORMATION FORM (Add Info feature) */}
+      {showInfoForm && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-black/[0.06] p-5 max-h-full overflow-y-auto">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-black text-gray-900">Add Cultural Information</h3>
+              <button
+                type="button"
+                onClick={handleFormCancel}
+                className="p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="mb-3">
+              <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Location</div>
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-800 bg-gray-50 rounded-xl px-3 py-2 border border-gray-100">
+                <MapPin className="w-3.5 h-3.5 text-[#D8612F] flex-shrink-0" />
+                <span>{pendingLocation?.manualName || 'Selected location on map'}</span>
+              </div>
+            </div>
+
+            <div className="mb-3">
+              <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Category</div>
+              <div className="flex flex-wrap gap-1.5">
+                {Object.entries(CATEGORY_META).map(([key, meta]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setFormCategory(key)}
+                    className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-colors ${
+                      formCategory === key
+                        ? 'bg-[#D8612F] text-white border-[#D8612F]'
+                        : 'bg-white text-gray-600 border-gray-200 hover:bg-orange-50'
+                    }`}
+                  >
+                    {meta.emoji} {meta.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-3">
+              <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Name</div>
+              <input
+                type="text"
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                placeholder="e.g. Muthappan Temple"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#D8612F]/40"
+              />
+            </div>
+
+            <div className="mb-3">
+              <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Description</div>
+              <textarea
+                value={formDescription}
+                onChange={(e) => setFormDescription(e.target.value)}
+                placeholder="Share a short description..."
+                rows={3}
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#D8612F]/40 resize-none"
+              />
+            </div>
+
+            <div className="mb-4">
+              <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Photo</div>
+              {formPhotoPreview ? (
+                <div className="relative w-full h-28 rounded-xl overflow-hidden border border-gray-200">
+                  <img src={formPhotoPreview} alt="Preview" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={handleRemovePhoto}
+                    className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl border border-dashed border-gray-300 text-xs font-bold text-gray-500 hover:bg-gray-50 cursor-pointer transition-colors">
+                  + Upload Photo
+                  <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
+                </label>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleFormCancel}
+                className="flex-1 px-3 py-2 rounded-xl bg-gray-100 text-gray-700 text-xs font-bold hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleFormDone}
+                disabled={!formName.trim()}
+                className="flex-1 px-3 py-2 rounded-xl bg-[#D8612F] text-white text-xs font-bold hover:bg-[#c2551f] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SIMULATED GOOGLE VERIFICATION UI (Add Info feature - prototype only, no real API calls) */}
+      {showVerification && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-black/[0.06] p-5 text-center">
+            {verificationStage === 'checking' && (
+              <>
+                <div className="w-10 h-10 mx-auto mb-3 rounded-full border-4 border-orange-200 border-t-[#D8612F] animate-spin" />
+                <div className="text-sm font-black text-gray-900 mb-1">Checking Information...</div>
+                <p className="text-xs text-gray-500">
+                  Checking Google Maps for a possible matching place near your selected location.
+                </p>
+              </>
+            )}
+
+            {verificationStage === 'match' && verificationMatch && (
+              <>
+                <div className="text-sm font-black text-gray-900 mb-3">Possible Match Found</div>
+                <div className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-2xl px-3 py-2.5 mb-4 text-left">
+                  <MapPin className="w-4 h-4 text-[#D8612F] flex-shrink-0" />
+                  <div>
+                    <div className="text-xs font-bold text-gray-900">{verificationMatch.name}</div>
+                    <div className="text-[10px] text-gray-500">
+                      Approx. {verificationMatch.distance} from your selected location
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      alert(
+                        `This is a simulated match preview for "${verificationMatch.name}". No real Google Maps connection is made in this prototype.`
+                      )
+                    }
+                    className="flex-1 px-3 py-2 rounded-xl bg-gray-100 text-gray-700 text-xs font-bold hover:bg-gray-200 transition-colors"
+                  >
+                    View Match
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleFinalizeAddition}
+                    className="flex-1 px-3 py-2 rounded-xl bg-[#D8612F] text-white text-xs font-bold hover:bg-[#c2551f] transition-colors"
+                  >
+                    Continue Anyway
+                  </button>
+                </div>
+              </>
+            )}
+
+            {verificationStage === 'nomatch' && (
+              <>
+                <div className="text-sm font-black text-gray-900 mb-1">No Matching Place Found</div>
+                <p className="text-xs text-gray-500 mb-4">
+                  We couldn't find an existing place near your selected location.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleFinalizeAddition}
+                  className="w-full px-3 py-2 rounded-xl bg-[#D8612F] text-white text-xs font-bold hover:bg-[#c2551f] transition-colors"
+                >
+                  Continue Anyway
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
