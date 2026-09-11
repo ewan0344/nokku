@@ -17,11 +17,15 @@ export default function ProfilePage() {
   // Calculate places visited for each year
   // --------------------------------------------------
   const yearlyVisits = visitedPlaces.reduce((acc, place) => {
-    if (!place.verifiedDate) {
+    // Normal visits use visitedDate
+    // Theyyam verification uses verifiedDate
+    const visitDate = place.visitedDate || place.verifiedDate;
+
+    if (!visitDate) {
       return acc;
     }
 
-    const date = new Date(place.verifiedDate);
+    const date = new Date(visitDate);
     const year = date.getFullYear();
 
     if (!isNaN(year)) {
