@@ -4,7 +4,7 @@ import { GreenArrowMarker3D, RedArrowMarker3D, FoodMarker3D } from './MapMarkers
 import LocationDetailCard from './LocationDetailCard';
 import { Compass, Sparkles, Navigation, X, Clock, MapPin, Info } from 'lucide-react';
 
-export default function KannurSchematicMap({ onBackToKerala }) {
+export default function KannurSchematicMap({ onBackToKerala, isNearMe }) {
   // Automatically select Theyyam Centres so the description card is visible on initial open
   const [selectedLocation, setSelectedLocation] = useState(() => {
     return CULTURAL_LOCATIONS.find((loc) => loc.id === 'theyyam-centres') || null;
@@ -40,11 +40,29 @@ export default function KannurSchematicMap({ onBackToKerala }) {
       
       {/* Top Controls & Category Filters */}
       <div className="w-full z-20 flex flex-wrap items-center justify-between gap-2 mb-1.5 flex-shrink-0">
-        <div className="flex items-center space-x-2 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-black/[0.06] shadow-sm">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#D8612F] animate-pulse" />
-          <span className="text-xs font-black text-gray-900 uppercase tracking-wide">Kannur Cultural Discovery Map</span>
-          <span className="text-xs text-gray-400">|</span>
-          <span className="text-xs text-gray-500 font-medium">Prototype Schematic View</span>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Main Title Badge */}
+          <div className="flex items-center space-x-2 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-black/[0.06] shadow-sm">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#D8612F] animate-pulse" />
+            <span className="text-xs font-black text-gray-900 uppercase tracking-wide">Kannur Cultural Discovery Map</span>
+            <span className="text-xs text-gray-400">|</span>
+            <span className="text-xs text-gray-500 font-medium">Prototype Schematic View</span>
+          </div>
+
+          {/* Near Me Discovered Message Pill */}
+          {isNearMe && (
+            <div className="flex items-center space-x-2 bg-gradient-to-r from-[#D8612F] to-[#EA7341] text-white px-3.5 py-1.5 rounded-2xl shadow-md border border-orange-300/40 animate-in slide-in-from-left duration-300">
+              <span className="text-sm">📍</span>
+              <div className="text-left leading-tight">
+                <div className="text-[10.5px] font-black uppercase tracking-wider text-orange-100">
+                  Cultural places near you
+                </div>
+                <div className="text-xs font-black text-white">
+                  Kannur, Kerala
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Filter Pills */}

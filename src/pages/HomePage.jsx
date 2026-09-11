@@ -57,13 +57,24 @@ export default function HomePage() {
       </div>
 
       {/* 3. EXTRACTED EARTH/GLOBE (Same Earth from Reference) */}
-      <div className="absolute bottom-0 right-0 w-full h-full pointer-events-none z-[2] overflow-hidden flex items-end justify-end">
+      {/* 
+        Root cause of blur: 1024×586px image was stretched to 100vw×100vh via object-cover.
+        Fix: anchor to bottom of viewport at 100vw width, maintain natural aspect ratio.
+        This matches the visual composition of the reference (earth fills bottom of screen)
+        without upscaling past native resolution on most monitors.
+      */}
+      <div className="absolute bottom-0 left-0 right-0 w-full pointer-events-none z-[2]">
         <img
           src="/earth-globe.png"
           alt="Earth visual from reference with India"
-          className="w-full h-full object-cover object-bottom pointer-events-none select-none"
+          className="w-full h-auto block pointer-events-none select-none"
+          style={{
+            imageRendering: '-webkit-optimize-contrast',
+            willChange: 'transform',
+          }}
         />
       </div>
+
 
       {/* 4. RECREATED HEADER */}
       <header className="relative z-20 w-full px-8 sm:px-12 lg:px-16 pt-8 sm:pt-10 flex items-center justify-between">

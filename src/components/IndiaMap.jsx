@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import India from '@react-map/india';
 import KeralaDistrictMap from './KeralaDistrictMap';
 import KannurSchematicMap from './KannurSchematicMap';
-import { ChevronRight, RotateCcw } from 'lucide-react';
+import { ChevronRight, RotateCcw, MapPin, Loader2, Sparkles } from 'lucide-react';
 
 /**
  * All 28 Indian States and 8 Union Territories with percentage coordinates
@@ -55,6 +55,11 @@ export default function IndiaMap() {
   const [isZooming, setIsZooming] = useState(false);
   const [hoveredState, setHoveredState] = useState(null);
 
+  // Prototype "Discover Near Me" states
+  const [isDiscovering, setIsDiscovering] = useState(false);
+  const [discoveryStep, setDiscoveryStep] = useState(''); // 'finding' | 'found' | ''
+  const [isNearMeActive, setIsNearMeActive] = useState(false);
+
   // Dynamic map size calculated to fit the available container bounds
   const containerRef = useRef(null);
   const [mapSize, setMapSize] = useState(520);
@@ -104,16 +109,56 @@ export default function IndiaMap() {
     }
   };
 
+  // Prototype "Discover Near Me" simulated sequence
+  const handleDiscoverNearMe = () => {
+    if (isDiscovering) return;
+
+    setIsDiscovering(true);
+    setDiscoveryStep('finding');
+
+    // Step 1: Simulate searching (~1.4s)
+    setTimeout(() => {
+      setDiscoveryStep('found');
+
+      // Step 2: Show "Location Found: Kannur, Kerala" (~1.1s), then start smooth zoom transition
+      setTimeout(() => {
+        setIsDiscovering(false);
+        setDiscoveryStep('');
+
+        // Step 3: Smooth zoom India -> Kerala
+        setIsZooming(true);
+        setTimeout(() => {
+          setLevel('kerala');
+          setIsZooming(false);
+
+          // Step 4: After a brief pause in Kerala, smoothly zoom into Kannur (~0.9s)
+          setTimeout(() => {
+            setIsZooming(true);
+            setTimeout(() => {
+              setLevel('kannur');
+              setIsNearMeActive(true);
+              setIsZooming(false);
+            }, 600);
+          }, 900);
+
+        }, 600);
+      }, 1100);
+    }, 1400);
+  };
+
   return (
     <div className="relative w-full h-full flex-1 bg-gradient-to-b from-[#F2F7FB] via-[#FAFBFD] to-[#FFF7F2] rounded-3xl overflow-hidden border border-black/[0.06] shadow-sm flex flex-col select-none">
       
-      {/* Top Breadcrumb Navigation Bar */}
-      <div className="w-full z-30 px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between border-b border-black/[0.04] bg-white/85 backdrop-blur-md">
+      {/* Top Breadcrumb & Actions Bar */}
+      <div className="w-full z-30 px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between border-b border-black/[0.04] bg-white/85 backdrop-blur-md gap-2">
         {/* Interactive Breadcrumb Hierarchy */}
         <nav aria-label="Breadcrumb" className="flex items-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm font-semibold">
           <button
             type="button"
-            onClick={() => setLevel('india')}
+            onClick={() => {
+              setLevel('india');
+              setIsNearMeActive(false);
+            }}
             className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl transition-all ${
               level === 'india'
                 ? 'bg-[#14171A] text-white shadow-sm'
@@ -157,18 +202,78 @@ export default function IndiaMap() {
           </button>
         </nav>
 
-        {/* Reset Button */}
-        {level !== 'india' && (
-          <button
-            type="button"
-            onClick={() => setLevel('india')}
-            className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl text-xs font-semibold text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 transition-colors"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset to India</span>
-          </button>
-        )}
+        {/* Action Controls: Discover Near Me & Reset */}
+        <div className="flex items-center space-x-2">
+          {level === 'india' && (
+            <button
+              type="button"
+              onClick={handleDiscoverNearMe}
+              disabled={isDiscovering}
+              className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold text-white bg-gradient-to-r from-[#D8612F] to-[#EA7341] hover:from-[#C25222] hover:to-[#D8612F] shadow-sm hover:shadow-md transition-all active:scale-95 border border-orange-300/40 cursor-pointer"
+              title="Simulate locating cultural sites near you"
+            >
+              <span className="text-sm">📍</span>
+              <span>Discover Near Me</span>
+            </button>
+          )}
+
+          {level !== 'india' && (
+            <button
+              type="button"
+              onClick={() => {
+                setLevel('india');
+                setIsNearMeActive(false);
+              }}
+              className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl text-xs font-semibold text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 transition-colors"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset to India</span>
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Simulated Location Discovery Overlay */}
+      {isDiscovering && (
+        <div className="absolute inset-0 z-50 bg-black/35 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white/95 backdrop-blur-md rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl border border-black/10 text-center animate-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-orange-100 to-amber-100 text-[#D8612F] flex items-center justify-center mx-auto mb-4 relative">
+              {discoveryStep === 'finding' ? (
+                <>
+                  <div className="w-16 h-16 rounded-3xl bg-orange-400/20 animate-ping absolute inset-0" />
+                  <Loader2 className="w-8 h-8 animate-spin" />
+                </>
+              ) : (
+                <MapPin className="w-8 h-8 animate-bounce text-[#D8612F]" />
+              )}
+            </div>
+
+            {discoveryStep === 'finding' ? (
+              <>
+                <h3 className="text-base sm:text-lg font-extrabold text-gray-900 tracking-tight">
+                  Finding cultural places near you...
+                </h3>
+                <p className="text-xs text-gray-500 mt-1.5">
+                  Scanning regional living heritage and oral traditions...
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-extrabold border border-emerald-200 mb-1.5 uppercase">
+                  <span>Location Identified</span>
+                </div>
+                <h3 className="text-xl font-black text-[#14171A] tracking-tight">
+                  Kannur, Kerala
+                </h3>
+                <p className="text-xs text-[#D8612F] font-semibold mt-1 flex items-center justify-center space-x-1">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Taking you to nearby cultural treasures...</span>
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Camera Viewport Canvas */}
       <div 
@@ -264,7 +369,10 @@ export default function IndiaMap() {
         {/* LEVEL 3: KANNUR CULTURAL SCHEMATIC VIEW */}
         {level === 'kannur' && (
           <div className="relative w-full h-full flex items-center justify-center animate-in zoom-in-90 fade-in duration-500">
-            <KannurSchematicMap onBackToKerala={() => setLevel('kerala')} />
+            <KannurSchematicMap 
+              onBackToKerala={() => setLevel('kerala')} 
+              isNearMe={isNearMeActive}
+            />
           </div>
         )}
       </div>
